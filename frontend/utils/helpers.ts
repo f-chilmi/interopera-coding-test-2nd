@@ -1,6 +1,6 @@
 export const getBaseUrl = (options?: { isBackendAPI: boolean }) => {
-  if (options?.isBackendAPI && process.env.NEXT_PUBLIC_BACKEND_API_URL) {
-    return process.env.NEXT_PUBLIC_BACKEND_API_URL;
+  if (options?.isBackendAPI) {
+    return process.env.NEXT_PUBLIC_BACKEND_API_URL ?? "http://localhost:8000";
   }
 
   if (process.env.NEXT_PUBLIC_BASE_API_URL) {

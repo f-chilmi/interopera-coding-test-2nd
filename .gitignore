@@ -8,7 +8,7 @@ backend/*.pyc
 # Build outputs
 frontend/.next/
 frontend/out/
-backend/vector_store/
+backend/chroma_db/
 
 # Environment variables
 .env

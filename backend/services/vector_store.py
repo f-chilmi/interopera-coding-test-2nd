@@ -69,8 +69,6 @@ class VectorStoreService:
         """Add documents to the vector store"""
         logger.info(f"add_documents called on instance: {self.instance_id}")
         try:
-            print(self)
-            print(not self.vector_store)
             if not self.vector_store:
                 logger.error(f"Vector store not initialized on instance: {self.instance_id}")
                 raise Exception("Vector store not initialized")
@@ -78,7 +76,7 @@ class VectorStoreService:
             # Add document_id to metadata
             for doc in documents:
                 doc.metadata["document_id"] = document_id
-                print(doc.metadata)
+        
             
             # Add documents to vector store
             self.vector_store.add_documents(documents)

@@ -2,9 +2,7 @@ from typing import Optional
 import uuid
 from fastapi import FastAPI, Query, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from services.chart_generator import ChartGenerator
 from services.evaluation_service import EvaluationService
-from services.financial_calculator import FinancialCalculator
 from services.highlighting_service import HighlightingService
 from models.schemas import ChatRequest, ChatResponse, DocumentsResponse, FeedbackRequest, UploadResponse
 from services.pdf_processor import PDFProcessor
@@ -37,8 +35,6 @@ app.add_middleware(
 # Initialize services
 pdf_processor = PDFProcessor()
 rag_pipeline = RAGPipeline(vector_store)
-financial_calculator = FinancialCalculator()
-chart_generator = ChartGenerator()
 evaluation_service = EvaluationService()
 highlighting_service = HighlightingService()
 
@@ -68,7 +64,6 @@ async def root():
 @app.post("/api/upload")
 async def upload_pdf(file: UploadFile = File(...)):
     """Upload and process PDF file"""
-    print("/api/upload")
 
     start_time = time.time()
     try:
@@ -190,26 +185,6 @@ async def get_chunks(
         logger.error(f"Error retrieving chunks: {str(e)}")
         raise HTTPException(status_code=500, detail="Error retrieving chunks")
 
-
-@app.post("/api/calculate-metrics")
-async def calculate_financial_metrics(data: dict):
-    """Calculate financial metrics from provided data"""
-    try:
-        metrics = financial_calculator.calculate_metrics(data)
-        return {"metrics": metrics}
-    except Exception as e:
-        logger.error(f"Error calculating metrics: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error calculating financial metrics")
-
-@app.post("/api/generate-chart")
-async def generate_chart(data: dict):
-    """Generate charts from financial data"""
-    try:
-        chart_data = chart_generator.generate_chart(data)
-        return chart_data
-    except Exception as e:
-        logger.error(f"Error generating chart: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error generating chart")
 
 @app.delete("/api/documents/{document_id}")
 async def delete_document(document_id: str):
