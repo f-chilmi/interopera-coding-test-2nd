@@ -4,21 +4,26 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # OpenAI API configuration
-    openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
+    google_api_key: str = os.getenv("GOOGLE_API_KEY", "")
+    hugging_face_api_key: str = os.getenv("HUGGING_FACE_API_KEY", "")
     
     # Vector database configuration
     vector_db_path: str = os.getenv("VECTOR_DB_PATH", "./vector_store")
     vector_db_type: str = os.getenv("VECTOR_DB_TYPE", "chromadb")
+    chroma_persist_directory: str = os.getenv("CHROMA_PERSIST_DIRECTORY", "./chroma_db")
     
     # PDF upload path
     pdf_upload_path: str = os.getenv("PDF_UPLOAD_PATH", "../data")
+
+    # File Upload Configuration
+    max_file_size: int = 50 * 1024 * 1024  # 50MB
+    upload_directory: str = "uploads"
     
     # Embedding model configuration
     embedding_model: str = os.getenv("EMBEDDING_MODEL", "text-embedding-ada-002")
     
     # LLM configuration
-    llm_model: str = os.getenv("LLM_MODEL", "gpt-3.5-turbo")
+    llm_model: str = os.getenv("LLM_MODEL", "gemini-1.5-flash")
     llm_temperature: float = float(os.getenv("LLM_TEMPERATURE", "0.1"))
     max_tokens: int = int(os.getenv("MAX_TOKENS", "1000"))
     
@@ -36,16 +41,14 @@ class Settings(BaseSettings):
     debug: bool = os.getenv("DEBUG", "True").lower() == "true"
     
     # CORS configuration
-    allowed_origins: List[str] = os.getenv(
-        "ALLOWED_ORIGINS", 
-        "http://localhost:3000,http://127.0.0.1:3000"
-    ).split(",")
+    allowed_origins: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
     
     # Logging configuration
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
     
     class Config:
         env_file = ".env"
+        extra = "allow"
 
 
 settings = Settings() 
