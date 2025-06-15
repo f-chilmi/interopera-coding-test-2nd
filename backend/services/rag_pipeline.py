@@ -11,10 +11,6 @@ logger = logging.getLogger(__name__)
 
 class RAGPipeline:
     def __init__(self, vector_store: VectorStoreService):
-        # TODO: Initialize RAG pipeline components
-        # - Vector store service
-        # - LLM client
-        # - Prompt templates
         self.vector_store = vector_store
         
         # Configure Google Gemini
@@ -22,76 +18,36 @@ class RAGPipeline:
         self.model = genai.GenerativeModel(settings.llm_model)
         
         # System prompt template
-        self.system_prompt = """You are an expert financial analyst assistant specializing in financial statement analysis. Your task is to provide comprehensive answers about financial data based on the provided context.
+        self.system_prompt = """You are a financial analyst assistant. Deliver precise analysis based on the provided financial documents.
 
-FINANCIAL ANALYSIS GUIDELINES:
-1. **Revenue Analysis**: When asked about revenue, provide total figures, growth rates, and segment breakdowns if available
-2. **Profitability Metrics**: Calculate and explain profit margins, operating profit growth, net income changes
-3. **Cost Analysis**: Identify and categorize main cost items (COGS, operating expenses, interest, taxes)
-4. **Cash Flow Assessment**: Analyze operating, investing, and financing cash flows; comment on liquidity
-5. **Financial Ratios**: Calculate debt ratios, current ratios, ROE, ROA when data is available
-6. **Trend Analysis**: Compare year-over-year changes and identify patterns
-7. **Context Citation**: Always reference specific pages and sections from the source documents
+Core Requirements:
+1. Answer using ONLY the provided document context
+2. Include exact figures with calculations when data is available
+3. Cite specific page numbers or document sections for all data
+4. Explicitly state when required information is missing from context
+5. Balance brevity with comprehensive coverage
+6. For financial metrics, present both numerical values and business significance
+7. Lead with direct answers, followed by supporting analysis
 
-RESPONSE FORMAT:
-- Start with a direct answer to the question
-- Provide specific numbers with currency and time periods
-- Include relevant calculations and percentages
-- Cite page references for all data points
-- If data is incomplete, clearly state what's missing
-
-IMPORTANT: Base your analysis ONLY on the provided context. If information is not available in the context, explicitly state this limitation.
+Key Areas: Revenue performance, profit margins, cost structure, cash flows, financial ratios, and period-over-period comparisons as relevant.
 
 Context from financial documents:
 {context}
-
 Previous conversation (if any):
 {chat_history}
+Question: {question}"""
 
-Question: {question}
-
-Please provide a comprehensive answer based on the document context above.
-"""
-        # self.system_prompt = """You are an AI assistant specialized in analyzing financial documents and statements. 
-        # Your role is to provide accurate, helpful answers based on the provided document context.
-
-        # Guidelines:
-        # 1. Base your answers primarily on the provided context from the documents
-        # 2. If information is not available in the context, clearly state this
-        # 3. For financial data, provide specific numbers and calculations when available
-        # 4. Always cite which document or page your information comes from
-        # 5. Be concise but thorough in your explanations
-        # 6. If asked about financial metrics, provide both the values and their implications
-
-        # Context from documents:
-        # {context}
-
-        # Chat History:
-        # {chat_history}
-
-        # Question: {question}
-
-        # Please provide a comprehensive answer based on the document context above."""
-
-    
     async def generate_answer(self, question: str, chat_history: List[Dict[str, str]] = None) -> Dict[str, Any]:
         """Generate answer using RAG pipeline"""
-        # TODO: Implement RAG pipeline
-        # 1. Retrieve relevant documents
-        # 2. Generate context from retrieved documents
-        # 3. Generate answer using LLM
-        # 4. Return answer with sources
         try:
             # Retrieve relevant documents
             relevant_docs = await self._retrieve_documents(question)
-            print(87, relevant_docs)
             
             # Generate context from retrieved documents
             context = self._generate_context(relevant_docs)
             
             # Generate answer using LLM
             answer = self._generate_llm_response(question, context, chat_history)
-            print('answer -> ', answer)
             
             # Prepare sources
             sources = self._prepare_sources(relevant_docs)
@@ -107,10 +63,6 @@ Please provide a comprehensive answer based on the document context above.
     
     async def _retrieve_documents(self, query: str) -> List[Document]:
         """Retrieve relevant documents for the query"""
-        # TODO: Implement document retrieval
-        # - Search vector store for similar documents
-        # - Filter by similarity threshold
-        # - Return top-k documents
         try:
             # Expand query with financial keywords if relevant
             expanded_query = self._expand_financial_query(query)
@@ -148,7 +100,6 @@ Please provide a comprehensive answer based on the document context above.
     
     def _generate_context(self, documents: List[Document]) -> str:
         """Generate context from retrieved documents"""
-        # TODO: Generate context string from documents
         if not documents:
             return "No relevant documents found."
         
@@ -166,10 +117,6 @@ Please provide a comprehensive answer based on the document context above.
     
     def _generate_llm_response(self, question: str, context: str, chat_history: List[Dict[str, str]] = None) -> str:
         """Generate response using LLM"""
-        # TODO: Implement LLM response generation
-        # - Create prompt with question and context
-        # - Call LLM API
-        # - Return generated response
         try:
             # Format chat history
             history_text = ""

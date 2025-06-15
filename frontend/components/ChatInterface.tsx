@@ -1,68 +1,64 @@
-import React, { useState, useEffect, useRef } from "react";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { api } from "@/utils/api";
+import { Document } from "@/utils/types";
 import {
-  Send,
+  FileText,
   Loader2,
   MessageSquare,
-  AlertCircle,
-  CheckCircle,
+  Send,
   Star,
-  X,
+  Trash2,
 } from "lucide-react";
-import { api } from "../utils/api"; // Import the centralized API functions
+import React, { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { ToastInterface } from "./Toast";
+import DocumentCard from "./DocumentCard";
 
+interface Source {
+  content: string;
+  metadata: {
+    page_width: number;
+    rotation: number;
+    document_id: string;
+    page: number;
+    filename: string;
+    chunk_index: number;
+    total_chunks_in_page: number;
+    upload_date: Date;
+    page_height: number;
+    chunk_id: string;
+  };
+  page: number;
+  score: number;
+}
 interface Message {
+  id?: string;
+  type: "user" | "assistant";
+  answer?: string;
   text: string;
-  isUser: boolean;
-  sources?: any[];
+  processing_time?: number;
+  sources?: Source[];
 }
 
-interface ToastProps {
-  message: string;
-  type: "success" | "error" | "info";
-  onClose: () => void;
-  duration?: number;
+interface ChatInterfaceProps {
+  documents: Document[];
+  activeTab: string;
+  loadDocuments: () => void;
+  showToast: (val: ToastInterface) => void;
 }
 
-const Toast = ({ message, type, onClose, duration = 3000 }: ToastProps) => {
-  useEffect(() => {
-    const timer = setTimeout(onClose, duration);
-    return () => clearTimeout(timer);
-  }, [onClose, duration]);
-
-  const bgColor =
-    type === "success"
-      ? "bg-green-500"
-      : type === "error"
-      ? "bg-red-500"
-      : "bg-blue-500";
-  const Icon =
-    type === "success"
-      ? CheckCircle
-      : type === "error"
-      ? AlertCircle
-      : MessageSquare;
-
-  return (
-    <div
-      className={`fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-slide-in-right z-50`}
-    >
-      <Icon size={20} />
-      <span>{message}</span>
-      <button onClick={onClose} className="ml-2 hover:opacity-70">
-        <X size={16} />
-      </button>
-    </div>
-  );
-};
-
-interface MessageProps {
+const MessageComponent = ({
+  message,
+  isUser,
+  sources,
+  onFeedback,
+}: {
   message: string;
   isUser: boolean;
-  sources?: any[];
+  sources?: Source[];
   onFeedback: (message: string, rating: number) => void;
-}
-
-const Message = ({ message, isUser, sources, onFeedback }: MessageProps) => {
+}) => {
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackRating, setFeedbackRating] = useState(0);
 
@@ -79,12 +75,16 @@ const Message = ({ message, isUser, sources, onFeedback }: MessageProps) => {
       <div className={`max-w-3xl ${isUser ? "order-2" : "order-1"}`}>
         <div
           className={`rounded-lg px-4 py-3 ${
-            isUser
-              ? "bg-blue-500 text-white ml-12"
-              : "bg-gray-100 text-gray-800 mr-12"
+            isUser ? "bg-blue-900  ml-12" : "bg-gray-100  mr-12"
           }`}
         >
-          <div className="whitespace-pre-wrap">{message}</div>
+          <div
+            className={`prose max-w-none ${
+              isUser ? "text-white" : "text-gray-800"
+            }`}
+          >
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{message}</ReactMarkdown>
+          </div>
 
           {sources && sources.length > 0 && (
             <div className="mt-3 pt-3 border-t border-gray-200">
@@ -113,7 +113,7 @@ const Message = ({ message, isUser, sources, onFeedback }: MessageProps) => {
         </div>
 
         {showFeedback && !isUser && (
-          <div className="mt-2 flex items-center gap-1 bg-white p-2 rounded border shadow-sm">
+          <div className="mt-2 flex items-center gap-1 bg-white p-2 rounded border border-gray-300 shadow-sm">
             {[1, 2, 3, 4, 5].map((rating) => (
               <button
                 key={rating}
@@ -133,22 +133,24 @@ const Message = ({ message, isUser, sources, onFeedback }: MessageProps) => {
   );
 };
 
-interface ChatInterfaceProps {
-  sessionId: string;
-  showToast: (message: string, type: "success" | "error" | "info") => void;
-}
+const exampleQuestions = [
+  "What is the total revenue for 2025?",
+  "What is the year-over-year operating profit growth rate?",
+  "What are the main cost items?",
+  "How is the cash flow situation?",
+  "What is the debt ratio?",
+];
 
-export default function ChatInterface({
-  sessionId,
-  showToast,
-}: ChatInterfaceProps) {
+export default function ChatInterface(props: ChatInterfaceProps) {
+  const { documents, activeTab, loadDocuments, showToast } = props;
+
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputMessage, setInputMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [inputMessage, setInputMessage] = useState("");
+  const [sessionId] = useState(() => Math.random().toString(36).substr(2, 9));
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Auto scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -158,7 +160,7 @@ export default function ChatInterface({
 
     const userMessage = inputMessage.trim();
     setInputMessage("");
-    setMessages((prev) => [...prev, { text: userMessage, isUser: true }]);
+    setMessages((prev) => [...prev, { text: userMessage, type: "user" }]);
     setIsSending(true);
 
     try {
@@ -168,16 +170,18 @@ export default function ChatInterface({
         {
           text: response.answer,
           isUser: false,
+          type: "assistant",
           sources: response.sources,
         },
       ]);
     } catch (error) {
-      showToast("Failed to send message", "error");
+      showToast({ message: "Failed to send message", type: "error" });
       setMessages((prev) => [
         ...prev,
         {
           text: "Sorry, I encountered an error processing your question.",
           isUser: false,
+          type: "user",
         },
       ]);
     } finally {
@@ -195,107 +199,156 @@ export default function ChatInterface({
     }
   };
 
+  const handleDeleteDocument = async (docId: string) => {
+    try {
+      await api.deleteDocument(docId);
+      showToast({ message: "Document deleted successfully", type: "success" });
+      loadDocuments();
+    } catch (error) {
+      showToast({ message: "Failed to delete document", type: "error" });
+    }
+  };
+
   const handleFeedback = async (message: string, rating: number) => {
     try {
       await api.submitFeedback({
-        question: messages[messages.length - 2]?.text || "", // Assuming the previous message was the user's question
+        question: messages[messages.length - 2]?.text || "",
         answer: message,
         rating,
         session_id: sessionId,
       });
-      showToast("Thank you for your feedback!", "success");
+      showToast({ message: "Thank you for your feedback!", type: "success" });
     } catch (error) {
-      showToast("Failed to submit feedback", "error");
+      showToast({ message: "Failed to submit feedback", type: "error" });
     }
   };
 
-  return (
-    <div className="bg-white rounded-lg shadow-sm border flex flex-col h-[calc(100vh-200px)]">
-      {/* Messages display area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 ? (
-          <div className="text-center py-12">
-            <MessageSquare className="mx-auto text-gray-400 mb-4" size={48} />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Welcome to Financial Q&A
-            </h3>
-            <p className="text-gray-500 mb-4">
-              Upload your financial documents and start asking questions about
-              them.
-            </p>
-            <div className="bg-blue-50 rounded-lg p-4 text-left max-w-md mx-auto">
-              <h4 className="font-medium text-blue-900 mb-2">
-                Example questions:
-              </h4>
-              <ul className="text-sm text-blue-700 space-y-1">
-                <li>• What was the revenue for the last quarter?</li>
-                <li>• Calculate the debt-to-equity ratio</li>
-                <li>• Show me the profit margins</li>
-                <li>• What are the main expenses?</li>
-              </ul>
-            </div>
-          </div>
-        ) : (
-          messages.map((msg, idx) => (
-            <Message
-              key={idx}
-              message={msg.text}
-              isUser={msg.isUser}
-              sources={msg.sources}
-              onFeedback={handleFeedback}
-            />
-          ))
-        )}
-        {isSending && (
-          <div className="flex justify-start">
-            <div className="bg-gray-100 rounded-lg px-4 py-3 mr-12">
-              <Loader2 className="animate-spin text-gray-500" size={20} />
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
+  const askTemplateQuestion = (q: string) => {
+    setInputMessage(q);
+  };
 
-      {/* Input area */}
-      <div className="border-t p-4">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={inputMessage}
-            onChange={handleInputChange}
-            onKeyPress={handleKeyPress}
-            placeholder="Ask a question about your financial documents..."
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-            disabled={isSending}
-          />
-          <button
-            onClick={handleSendMessage}
-            disabled={!inputMessage.trim() || isSending}
-            className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2"
-          >
-            {isSending ? (
-              <Loader2 className="animate-spin" size={20} />
+  return (
+    <div className="w-full lg:w-3/4 h-full overflow-auto min-h-0">
+      {activeTab === "chat" ? (
+        <div className="bg-white rounded-lg shadow-sm flex flex-col h-full">
+          {/* Chat Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.length === 0 ? (
+              <div className="text-center py-12">
+                <MessageSquare
+                  className="mx-auto text-gray-400 mb-4"
+                  size={48}
+                />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Welcome to Financial Q&A
+                </h3>
+                <p className="text-gray-500 mb-4">
+                  Upload your financial documents and start asking questions
+                  about them.
+                </p>
+                <div className="bg-blue-50 rounded-lg p-4 text-left max-w-md mx-auto">
+                  <h4 className="font-medium text-blue-900 mb-2">
+                    Example questions:
+                  </h4>
+                  <ol className="text-sm text-blue-700 space-y-1">
+                    {exampleQuestions.map((q) => (
+                      <li
+                        key={q}
+                        className="cursor-pointer"
+                        onClick={() => askTemplateQuestion(q)}
+                      >
+                        • {q}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </div>
             ) : (
-              <Send size={20} />
+              messages.map((msg, idx) => (
+                <MessageComponent
+                  key={idx}
+                  message={msg.text}
+                  isUser={msg.type === "user"}
+                  sources={msg.sources}
+                  onFeedback={handleFeedback}
+                />
+              ))
             )}
-          </button>
+            {isSending && (
+              <div className="flex justify-start">
+                <div className="bg-gray-100 rounded-lg px-4 py-3 mr-12">
+                  <Loader2 className="animate-spin text-gray-500" size={20} />
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input Area */}
+          <div className="border-t border-gray-300 p-4">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={inputMessage}
+                onChange={handleInputChange}
+                onKeyPress={handleKeyPress}
+                placeholder="Ask a question about your financial documents..."
+                className="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                disabled={isSending}
+              />
+              <button
+                onClick={handleSendMessage}
+                disabled={!inputMessage.trim() || isSending}
+                className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2"
+              >
+                {isSending ? (
+                  <Loader2 className="animate-spin" size={20} />
+                ) : (
+                  <Send size={20} />
+                )}
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-      <style jsx>{`
-        @keyframes slide-in-right {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-        .animate-slide-in-right {
-          animation: slide-in-right 0.3s ease-out;
-        }
-      `}</style>
+      ) : (
+        /* Documents Tab */
+        <div className="bg-white rounded-lg shadow-md p-6 h-full">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-medium text-gray-900">
+              Uploaded Documents
+            </h2>
+            <button
+              onClick={loadDocuments}
+              className="text-blue-500 hover:text-blue-600 font-medium text-sm"
+            >
+              Refresh
+            </button>
+          </div>
+
+          {documents.length === 0 ? (
+            <div className="text-center py-12">
+              <FileText className="mx-auto text-gray-400 mb-4" size={48} />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No documents uploaded
+              </h3>
+              <p className="text-gray-500 mb-4">
+                Upload your first PDF document to get started with financial
+                analysis.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {documents.map((doc, idx) => (
+                <DocumentCard
+                  key={idx}
+                  doc={doc}
+                  onDelete={() => handleDeleteDocument(doc.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

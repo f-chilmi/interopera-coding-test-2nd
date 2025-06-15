@@ -6,7 +6,6 @@ export default async function handler(
   res: NextApiResponse
 ) {
   try {
-    // const { question, session_id } = await req.json();
     const { question, session_id } = req.body as {
       question: string;
       session_id?: string;

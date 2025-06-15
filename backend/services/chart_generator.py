@@ -1,11 +1,9 @@
-from typing import Dict, Any, List
+from typing import Dict, Any
 import logging
-import json
 import base64
 from io import BytesIO
 import matplotlib.pyplot as plt
 import seaborn as sns
-import pandas as pd
 
 logger = logging.getLogger(__name__)
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export const api = {
   uploadPDF: async (file: File) => {
     const formData = new FormData();
@@ -25,7 +26,6 @@ export const api = {
   },
 
   getDocuments: async () => {
-    console.log(28, "getDocuments");
     const response = await fetch("/api/documents");
     if (!response.ok) {
       throw new Error("Failed to load documents");

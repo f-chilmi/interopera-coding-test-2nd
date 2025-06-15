@@ -1,9 +1,12 @@
 import React, { useEffect } from "react";
 import { CheckCircle, AlertCircle, MessageSquare, X } from "lucide-react";
 
-interface ToastProps {
+export interface ToastInterface {
   message: string;
   type: "success" | "error" | "info";
+}
+
+interface ToastProps extends ToastInterface {
   onClose: () => void;
   duration?: number;
 }
@@ -36,21 +39,6 @@ const Toast = ({ message, type, onClose, duration = 3000 }: ToastProps) => {
       <button onClick={onClose} className="ml-2 hover:opacity-70">
         <X size={16} />
       </button>
-      <style jsx>{`
-        @keyframes slide-in-right {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-        .animate-slide-in-right {
-          animation: slide-in-right 0.3s ease-out;
-        }
-      `}</style>
     </div>
   );
 };

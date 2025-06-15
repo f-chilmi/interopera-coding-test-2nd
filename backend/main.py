@@ -2,8 +2,6 @@ from typing import Optional
 import uuid
 from fastapi import FastAPI, Query, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from services.stt_service import STTService
 from services.chart_generator import ChartGenerator
 from services.evaluation_service import EvaluationService
 from services.financial_calculator import FinancialCalculator
@@ -37,9 +35,7 @@ app.add_middleware(
 )
 
 # Initialize services
-# TODO: Initialize financial_calculator & chart_generator services here
 pdf_processor = PDFProcessor()
-sttService = STTService()
 rag_pipeline = RAGPipeline(vector_store)
 financial_calculator = FinancialCalculator()
 chart_generator = ChartGenerator()
@@ -52,7 +48,6 @@ conversation_histories = {}
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup"""
-    # TODO: Initialize your services
     logger.info("Starting RAG Q&A System...")
 
     # Create upload directory if it doesn't exist
@@ -74,12 +69,6 @@ async def root():
 async def upload_pdf(file: UploadFile = File(...)):
     """Upload and process PDF file"""
     print("/api/upload")
-    # TODO: Implement PDF upload and processing
-    # 1. Validate file type (PDF)
-    # 2. Save uploaded file
-    # 3. Process PDF and extract text
-    # 4. Store documents in vector database
-    # 5. Return processing results
 
     start_time = time.time()
     try:
@@ -128,10 +117,6 @@ async def upload_pdf(file: UploadFile = File(...)):
 @app.post("/api/chat")
 async def chat(request: ChatRequest):
     """Process chat request and return AI response"""
-    # TODO: Implement chat functionality
-    # 1. Validate request
-    # 2. Use RAG pipeline to generate answer
-    # 3. Return response with sources
     start_time = time.time()
     
     try:
@@ -177,10 +162,7 @@ async def chat(request: ChatRequest):
 @app.get("/api/documents")
 async def get_documents():
     """Get list of processed documents"""
-    # TODO: Implement document listing
-    # - Return list of uploaded and processed documents
     try:
-        print(181)
         documents = await vector_store.get_documents_info()
         return DocumentsResponse(documents=documents)
     except Exception as e:
@@ -196,9 +178,7 @@ async def get_chunks(
     limit: int = Query(100, description="Maximum number of chunks to return")
 
 ):
-    """Get document chunks (optional endpoint)"""
-    # TODO: Implement chunk listing
-    # - Return document chunks with metadata
+    """Get document chunks"""
     try:
         chunks = await vector_store.get_chunks(
             document_id=document_id,
@@ -255,6 +235,7 @@ async def submit_feedback(request: FeedbackRequest):
         logger.error(f"Error submitting feedback: {str(e)}")
         raise HTTPException(status_code=500, detail="Error submitting feedback")
 
+
 @app.get("/api/feedback-stats")
 async def get_feedback_stats():
     """Get feedback statistics and metrics"""
@@ -294,19 +275,6 @@ async def highlight_chunks(request: dict):
     except Exception as e:
         logger.error(f"Error highlighting chunks: {str(e)}")
         raise HTTPException(status_code=500, detail="Error highlighting document chunks")
-
-@app.get("/api/transcribe")
-async def transcribe():
-    """Transcribe audio"""
-    try:
-        result = sttService.getStt()
-        
-        return {"result": result}
-        
-    except Exception as e:
-        logger.error(f"Error highlighting chunks: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error highlighting document chunks")
-
 
 
 if __name__ == "__main__":

@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 class VectorStoreService:
     def __init__(self):
-        # TODO: Initialize vector store (ChromaDB, FAISS, etc.)
         self.instance_id = id(self)
         self.embeddings = HuggingFaceEmbeddings(
             model_name="all-MiniLM-L6-v2"
@@ -68,9 +67,6 @@ class VectorStoreService:
     
     def add_documents(self, documents: List[Document], document_id: str) -> None:
         """Add documents to the vector store"""
-        # TODO: Implement document addition to vector store
-        # - Generate embeddings for documents
-        # - Store documents with embeddings in vector database
         logger.info(f"add_documents called on instance: {self.instance_id}")
         try:
             print(self)
@@ -95,28 +91,20 @@ class VectorStoreService:
     
     def similarity_search(self, query: str, k: int = None) -> List[Tuple[Document, float]]:
         """Search for similar documents"""
-        # TODO: Implement similarity search
-        # - Generate embedding for query
-        # - Search for similar documents in vector store
-        # - Return documents with similarity scores
         try:
             if not self.vector_store:
                 raise Exception("Vector store not initialized")
-            
-            print(105, k, settings.max_retrieval_documents, query)
             
             k = int(k or settings.max_retrieval_documents)
             
             # Perform similarity search with scores
             results = self.vector_store.similarity_search_with_score(query, k=k)
-            print(111,results)
             
             # Filter by similarity threshold
             filtered_results = [
                 (doc, score) for doc, score in results 
                 if score >= settings.similarity_threshold
             ]
-            print(118, filtered_results)
             
             return filtered_results
             
@@ -126,7 +114,6 @@ class VectorStoreService:
     
     def delete_document(self, document_id: str) -> None:
         """Delete documents from vector store"""
-        # TODO: Implement document deletion
         try:
             if not self.vector_store:
                 raise Exception("Vector store not initialized")
@@ -145,7 +132,6 @@ class VectorStoreService:
     
     def get_document_count(self) -> int:
         """Get total number of documents in vector store"""
-        # TODO: Return document count
         try:
             if not self.vector_store:
                 raise Exception("Vector store not initialized")
@@ -158,12 +144,9 @@ class VectorStoreService:
             
             # Group by document_id and filename
             documents_map = {}
-            print(161)
             for i, metadata in enumerate(results['metadatas']):
                 filename = metadata.get('filename', 'Unknown')
-                print(164, metadata)
                 document_id = metadata.get('document_id', 'unknown')
-                print(165, document_id)
                 upload_date = metadata.get('upload_date', datetime.now().isoformat())
                 
                 key = f"{document_id}_{filename}"
@@ -178,8 +161,7 @@ class VectorStoreService:
                     }
                 
                 documents_map[key]['chunks_count'] += 1
-            print(documents_map.values())
-            # Convert to DocumentInfo objects
+
             documents = [
                 DocumentInfo(
                     id=info['id'],
@@ -230,8 +212,6 @@ class VectorStoreService:
                 
                 documents_map[key]['chunks_count'] += 1
             
-            # Convert to DocumentInfo objects
-            print(235,  documents_map.values())
             documents = [
                 DocumentInfo(
                     id=info['id'],
